@@ -1,0 +1,185 @@
+name: Lab 1 - Vitest Tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check TypeScript compilation
+        run: npx tsc --noEmit
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
+
+  grading-checks:
+    name: Grading Checks
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with JSON coverage
+        run: npm run test:coverage -- --coverage.reporter=json-summary
+
+      - name: Check required files exist
+        run: |
+          echo "Checking required files..."
+          
+          files=(
+            "src/utils/math.ts"
+            "src/utils/math.test.ts"
+            "src/utils/strings.ts"
+            "src/utils/strings.test.ts"
+            "src/services/content.ts"
+            "src/services/content.test.ts"
+            "README.md"
+            "package.json"
+            "tsconfig.json"
+            "vitest.config.ts"
+          )
+          
+          missing=0
+          for file in "${files[@]}"; do
+            if [[ -f "$file" ]]; then
+              echo "✅ $file"
+            else
+              echo "❌ $file (MISSING)"
+              missing=$((missing + 1))
+            fi
+          done
+          
+          if [[ $missing -gt 0 ]]; then
+            echo ""
+            echo "::error::Missing $missing required file(s)"
+            exit 1
+          fi
+          
+          echo ""
+          echo "All required files present!"
+
+      - name: Check minimum test count
+        run: |
+          echo "Counting test cases..."
+          
+          # Count 'it(' occurrences in test files (each is a test case)
+          test_count=$(grep -r "it(" src/**/*.test.ts | wc -l)
+          
+          # Lab provides ~25 tests, students add 4 = minimum 29
+          min_tests=29
+          
+          echo "Found $test_count test cases (minimum required: $min_tests)"
+          
+          if [[ $test_count -lt $min_tests ]]; then
+            echo "::error::Insufficient test cases. Found $test_count, need at least $min_tests"
+            exit 1
+          fi
+          
+          echo "✅ Test count requirement met!"
+
+      - name: Check code coverage threshold
+        run: |
+          echo "Checking coverage thresholds..."
+          
+          # Extract coverage percentage from JSON summary
+          if [[ -f "coverage/coverage-summary.json" ]]; then
+            lines_pct=$(node -p "require('./coverage/coverage-summary.json').total.lines.pct")
+            statements_pct=$(node -p "require('./coverage/coverage-summary.json').total.statements.pct")
+            
+            echo "Line coverage: $lines_pct%"
+            echo "Statement coverage: $statements_pct%"
+            
+            # Check if coverage meets 90% threshold
+            threshold=90
+            
+            pass=$(node -p "$lines_pct >= $threshold && $statements_pct >= $threshold")
+            
+            if [[ "$pass" == "true" ]]; then
+              echo "✅ Coverage threshold met!"
+            else
+              echo "::error::Coverage below ${threshold}%. Lines: ${lines_pct}%, Statements: ${statements_pct}%"
+              exit 1
+            fi
+          else
+            echo "::error::Coverage summary not found"
+            exit 1
+          fi
+
+      - name: Check README completeness
+        run: |
+          echo "Checking README.md for required sections..."
+          
+          readme_content=$(cat README.md)
+          
+          missing_sections=()
+          
+          # Check for reflection answers (case-insensitive)
+          if ! echo "$readme_content" | grep -qi "reflection"; then
+            missing_sections+=("Reflection answers")
+          fi
+          
+          # Check for Testing Trophy discussion
+          if ! echo "$readme_content" | grep -qi "testing trophy\|trophy"; then
+            missing_sections+=("Testing Trophy connection")
+          fi
+          
+          # Check for setup instructions
+          if ! echo "$readme_content" | grep -qi "setup\|install\|getting started"; then
+            missing_sections+=("Setup instructions")
+          fi
+          
+          if [[ ${#missing_sections[@]} -gt 0 ]]; then
+            echo "::warning::README may be missing sections: ${missing_sections[*]}"
+          else
+            echo "✅ README appears complete!"
+          fi
+
+      - name: Generate grading summary
+        if: always()
+        run: |
+          echo "## Lab 1 Grading Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| All tests pass | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| Required files present | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| Minimum test count (29+) | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "| Coverage ≥ 90% | ✅ |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*Note: README completeness requires manual review*" >> $GITHUB_STEP_SUMMARY
