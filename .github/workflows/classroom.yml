@@ -1,0 +1,50 @@
+name: Autograding Tests
+'on':
+- push
+- repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: TypeScript compiles
+      id: typescript-compiles
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: TypeScript compiles
+        setup-command: npm ci
+        command: npx tsc --noEmit
+        timeout: 5
+        max-score: 15
+    - name: All tests pass
+      id: all-tests-pass
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: All tests pass
+        setup-command: ''
+        command: npm run test:run
+        timeout: 5
+        max-score: 20
+    - name: Coverage meets 90%
+      id: coverage-meets-90
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Coverage meets 90%
+        setup-command: ''
+        command: npm run test:coverage -- --coverage.thresholds.lines=90 --coverage.thresholds.statements=90
+        timeout: 5
+        max-score: 15
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        TYPESCRIPT-COMPILES_RESULTS: "${{steps.typescript-compiles.outputs.result}}"
+        ALL-TESTS-PASS_RESULTS: "${{steps.all-tests-pass.outputs.result}}"
+        COVERAGE-MEETS-90_RESULTS: "${{steps.coverage-meets-90.outputs.result}}"
+      with:
+        runners: typescript-compiles,all-tests-pass,coverage-meets-90
