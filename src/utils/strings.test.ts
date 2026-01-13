@@ -23,7 +23,10 @@ describe('string utilities', () => {
       expect(slugify('hello world')).toBe('hello-world');
     });
 
-    // TODO: Add your own test case
+    it('handles leading and trailing hyphens', () => {
+      expect(slugify('-hello world-')).toBe('hello-world');
+    });
+
   });
 
   describe('truncate', () => {
@@ -43,7 +46,10 @@ describe('string utilities', () => {
       expect(truncate('Hello', 5)).toBe('Hello');
     });
 
-    // TODO: Add your own test case
+    it('handles empty string', () => {
+      expect(truncate('', 5)).toBe('');
+    });
+    
   });
 
   describe('capitalize', () => {
@@ -59,7 +65,10 @@ describe('string utilities', () => {
       expect(capitalize('')).toBe('');
     });
 
-    // TODO: Add your own test case
+    it('returns character if special charcter used', () => {
+      expect(capitalize('-Hello')).toBe('-hello');
+    });
+    
   });
 
   describe('countWords', () => {
@@ -79,6 +88,9 @@ describe('string utilities', () => {
       expect(countWords('   ')).toBe(0);
     });
 
-    // TODO: Add your own test case
+    it('counts numbers as a word', () => {
+      expect(countWords('Hi this is a 34 test')).toBe(6);
+    });
+    
   });
 });
