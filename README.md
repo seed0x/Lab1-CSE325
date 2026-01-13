@@ -100,4 +100,4 @@ Integration tests give confidence that the different parts of the code base actu
 
 #### Testing Trophy Connection 
 
-This lab connects to the Testing Trophy by using different types of testing together. TypeScript helps catch basic type mistakes early, before the code even runs. Unit tests check that individual functions work on their own, while integration tests make sure those functions work correctly when used together. Using both helps give  
+This lab connects to the Testing Trophy by using different types of testing together. TypeScript helps catch basic type mistakes early, before the code even runs. Unit tests check that individual functions work on their own, while integration tests make sure those functions work correctly when used together.
