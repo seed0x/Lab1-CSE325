@@ -30,7 +30,7 @@ npm run test:coverage
 ```
 
 ### File structure
-
+```
 cse325-lab1-vitest-setup-seed0x/
 ├── .github/
 │   └── workflows/
@@ -50,12 +50,12 @@ cse325-lab1-vitest-setup-seed0x/
 ├── tsconfig.json
 ├── vitest.config.ts
 └── README.md                  
-
+```
 ---
 
 ### Additional Tests Added 
 
-To meet the lab requirement, I added at least one additional test per utility section: 
+To meet the lab requirement, I added one additional test per utility section: 
 
 
 #### slugify 
